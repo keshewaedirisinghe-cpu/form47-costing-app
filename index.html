@@ -564,10 +564,89 @@
   }
 
   async function documentPdfBlob(elementId){
-    if(!window.html2pdf) throw new Error('PDF library has not loaded. Check your internet connection and try again.');
-    const element=$(elementId);
-    const options={margin:0,image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff'},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css','legacy']}};
-    return await html2pdf().set(options).from(element).outputPdf('blob');
+    if(!window.html2canvas) throw new Error('PDF renderer has not loaded. Check your internet connection and try again.');
+    const source=$(elementId);
+    if(!source) throw new Error('Could not find the invoice/quotation preview.');
+
+    if(document.fonts?.ready){ try{ await document.fonts.ready; }catch{} }
+
+    // Render a clean A4-sized clone instead of the sticky on-screen preview.
+    // This avoids the blank-PDF issue some browsers have with html2pdf + sticky/grid elements.
+    const stage=document.createElement('div');
+    stage.setAttribute('aria-hidden','true');
+    stage.style.cssText='position:absolute;left:0;top:0;width:794px;z-index:-999999;background:#fff;pointer-events:none;';
+    const clone=source.cloneNode(true);
+    clone.removeAttribute('id');
+    clone.style.width='794px';
+    clone.style.maxWidth='794px';
+    clone.style.minHeight='1123px';
+    clone.style.margin='0';
+    clone.style.position='relative';
+    clone.style.boxShadow='none';
+    clone.style.borderRadius='0';
+    clone.style.overflow='visible';
+    clone.style.background='#fff';
+    stage.appendChild(clone);
+    document.body.appendChild(stage);
+
+    try{
+      // Convert relative image paths to absolute URLs and wait for logos to load.
+      const images=[...clone.querySelectorAll('img')];
+      images.forEach(img=>{ try{ img.src=new URL(img.getAttribute('src')||img.src,location.href).href; }catch{} });
+      await Promise.all(images.map(img=>img.complete && img.naturalWidth ? Promise.resolve() : new Promise(resolve=>{img.onload=resolve;img.onerror=resolve;})));
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+
+      const width=Math.max(794,clone.scrollWidth||0);
+      const height=Math.max(1123,clone.scrollHeight||0);
+      const canvas=await html2canvas(clone,{
+        scale:2,
+        useCORS:true,
+        allowTaint:false,
+        backgroundColor:'#ffffff',
+        logging:false,
+        width,
+        height,
+        windowWidth:width,
+        windowHeight:height,
+        scrollX:0,
+        scrollY:0
+      });
+
+      if(!canvas.width || !canvas.height) throw new Error('The PDF renderer returned an empty canvas.');
+
+      // Catch a failed all-white render before emailing a useless attachment.
+      const ctx=canvas.getContext('2d',{willReadFrequently:true});
+      const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+      let nonWhite=0;
+      const step=Math.max(4,Math.floor((pixels.length/4)/6000)*4);
+      for(let i=0;i<pixels.length;i+=step){
+        if(pixels[i]<245 || pixels[i+1]<245 || pixels[i+2]<245){ nonWhite++; if(nonWhite>20) break; }
+      }
+      if(nonWhite<=20) throw new Error('The invoice PDF rendered blank. Please refresh the page and try again.');
+
+      const JsPDF=window.jspdf?.jsPDF || window.jsPDF;
+      if(!JsPDF) throw new Error('PDF generator has not loaded. Refresh the page and try again.');
+      const pdf=new JsPDF({unit:'mm',format:'a4',orientation:'portrait',compress:true});
+      const pageWidth=210, pageHeight=297;
+      const imgWidth=pageWidth;
+      const imgHeight=(canvas.height*imgWidth)/canvas.width;
+      const imgData=canvas.toDataURL('image/jpeg',0.96);
+      let heightLeft=imgHeight;
+      let position=0;
+      pdf.addImage(imgData,'JPEG',0,position,imgWidth,imgHeight,undefined,'FAST');
+      heightLeft-=pageHeight;
+      while(heightLeft>0){
+        position=heightLeft-imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData,'JPEG',0,position,imgWidth,imgHeight,undefined,'FAST');
+        heightLeft-=pageHeight;
+      }
+      const blob=pdf.output('blob');
+      if(!(blob instanceof Blob) || blob.size<1500) throw new Error('The generated PDF is unexpectedly empty.');
+      return blob;
+    } finally {
+      stage.remove();
+    }
   }
 
   function blobToBase64(blob){
@@ -583,9 +662,13 @@
   async function sendGmailWithPdf({sender,to,subject,body,pdfBlob,pdfName,token}){
     const attachment=await blobToBase64(pdfBlob);
     const boundary='47BOUNDARY_'+Date.now();
+    const senderBrand=Object.values(brandData).find(b=>String(b.email).toLowerCase()===String(sender).toLowerCase());
+    const displayName=(senderBrand?.team || '47 Team').replace(/["\r\n]/g,'');
     const mime=[
-      `From: ${sender}`,
+      `From: "${displayName}" <${sender}>`,
+      `Reply-To: ${sender}`,
       `To: ${to}`,
+      `Date: ${new Date().toUTCString()}`,
       `Subject: ${subject}`,
       'MIME-Version: 1.0',
       `Content-Type: multipart/mixed; boundary="${boundary}"`,
@@ -593,6 +676,7 @@
       `--${boundary}`,
       'Content-Type: text/plain; charset="UTF-8"',
       'Content-Transfer-Encoding: 8bit',
+      'Content-Language: en',
       '',
       body,
       '',
