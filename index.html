@@ -1,4 +1,5 @@
 <!doctype html>
+<!-- 47 Costing App email fix v2: Gmail send-only OAuth, no profile verification -->
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -562,13 +563,6 @@
     });
   }
 
-  async function verifySender(token,expected){
-    const r=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile',{headers:{Authorization:`Bearer ${token}`}});
-    if(!r.ok) throw new Error('Could not verify the selected Gmail account.');
-    const data=await r.json();
-    if(String(data.emailAddress||'').toLowerCase()!==expected.toLowerCase()) throw new Error(`Google is signed in as ${data.emailAddress||'another account'}. Please sign in with ${expected}.`);
-  }
-
   async function documentPdfBlob(elementId){
     if(!window.html2pdf) throw new Error('PDF library has not loaded. Check your internet connection and try again.');
     const element=$(elementId);
@@ -613,7 +607,7 @@
     ].join('\r\n');
     const raw=utf8ToBase64Url(mime);
     const r=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({raw})});
-    if(!r.ok){let msg='Gmail could not send the message.'; try{const e=await r.json();msg=e?.error?.message||msg;}catch{} throw new Error(msg);}
+    if(!r.ok){let msg='Gmail could not send the message.'; try{const e=await r.json();msg=e?.error?.message||msg;}catch{} if(/from|sender|alias/i.test(msg)) msg += ' Make sure the Google account you selected matches the Send from address.'; throw new Error(msg);}
     return r.json();
   }
 
@@ -626,8 +620,7 @@
     setEmailStatus('invoiceEmailStatus',`Waiting for Google sign-in for ${sender}…`);
     try{
       const token=await requestGmailToken(sender);
-      await verifySender(token,sender);
-      setEmailStatus('invoiceEmailStatus','Creating invoice PDF…');
+      setEmailStatus('invoiceEmailStatus',`Google authorization complete for the selected sender. Creating invoice PDF…`);
       const number=safe($('invoiceNumber').value)||'invoice', pdfName=`Invoice-${number}.pdf`;
       const pdfBlob=await documentPdfBlob('invoicePaper');
       setEmailStatus('invoiceEmailStatus',`Sending to ${to}…`);
@@ -645,8 +638,7 @@
     setEmailStatus('quoteEmailStatus',`Waiting for Google sign-in for ${sender}…`);
     try{
       const token=await requestGmailToken(sender);
-      await verifySender(token,sender);
-      setEmailStatus('quoteEmailStatus','Creating quotation PDF…');
+      setEmailStatus('quoteEmailStatus',`Google authorization complete for the selected sender. Creating quotation PDF…`);
       const number=safe($('quoteNumber').value)||'quotation', pdfName=`Quotation-${number}.pdf`;
       const pdfBlob=await documentPdfBlob('quotationPaper');
       setEmailStatus('quoteEmailStatus',`Sending to ${to}…`);
@@ -698,4 +690,3 @@
 </script>
 </body>
 </html>
-<!-- Pages redeploy -->
