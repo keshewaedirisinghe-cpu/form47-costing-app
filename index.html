@@ -564,17 +564,17 @@
   }
 
   async function documentPdfBlob(elementId){
-    if(!window.html2canvas) throw new Error('PDF renderer has not loaded. Check your internet connection and try again.');
+    if(!window.html2pdf) throw new Error('PDF library has not loaded. Refresh the page and try again.');
     const source=$(elementId);
     if(!source) throw new Error('Could not find the invoice/quotation preview.');
 
     if(document.fonts?.ready){ try{ await document.fonts.ready; }catch{} }
 
-    // Render a clean A4-sized clone instead of the sticky on-screen preview.
-    // This avoids the blank-PDF issue some browsers have with html2pdf + sticky/grid elements.
+    // Render a clean A4-sized copy outside the app layout. This prevents sticky/grid
+    // positioning from creating a blank attachment in some browsers.
     const stage=document.createElement('div');
     stage.setAttribute('aria-hidden','true');
-    stage.style.cssText='position:absolute;left:0;top:0;width:794px;z-index:-999999;background:#fff;pointer-events:none;';
+    stage.style.cssText='position:fixed;left:-10000px;top:0;width:794px;background:#fff;pointer-events:none;z-index:1;';
     const clone=source.cloneNode(true);
     clone.removeAttribute('id');
     clone.style.width='794px';
@@ -590,58 +590,44 @@
     document.body.appendChild(stage);
 
     try{
-      // Convert relative image paths to absolute URLs and wait for logos to load.
+      // Use absolute same-origin logo URLs and wait for them before rendering.
       const images=[...clone.querySelectorAll('img')];
       images.forEach(img=>{ try{ img.src=new URL(img.getAttribute('src')||img.src,location.href).href; }catch{} });
-      await Promise.all(images.map(img=>img.complete && img.naturalWidth ? Promise.resolve() : new Promise(resolve=>{img.onload=resolve;img.onerror=resolve;})));
+      await Promise.all(images.map(img=>img.complete && img.naturalWidth ? Promise.resolve() : new Promise(resolve=>{
+        const done=()=>resolve(); img.addEventListener('load',done,{once:true}); img.addEventListener('error',done,{once:true}); setTimeout(done,4000);
+      })));
       await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
 
-      const width=Math.max(794,clone.scrollWidth||0);
-      const height=Math.max(1123,clone.scrollHeight||0);
-      const canvas=await html2canvas(clone,{
-        scale:2,
-        useCORS:true,
-        allowTaint:false,
-        backgroundColor:'#ffffff',
-        logging:false,
-        width,
-        height,
-        windowWidth:width,
-        windowHeight:height,
-        scrollX:0,
-        scrollY:0
-      });
+      const options={
+        margin:0,
+        image:{type:'jpeg',quality:0.98},
+        html2canvas:{scale:2,useCORS:true,allowTaint:false,backgroundColor:'#ffffff',logging:false,scrollX:0,scrollY:0},
+        jsPDF:{unit:'mm',format:'a4',orientation:'portrait',compress:true},
+        pagebreak:{mode:['css','legacy']}
+      };
 
-      if(!canvas.width || !canvas.height) throw new Error('The PDF renderer returned an empty canvas.');
+      // html2pdf.bundle already contains html2canvas + jsPDF internally. Using the worker
+      // avoids depending on window.html2canvas/window.jspdf globals, which the bundle does
+      // not expose in every browser.
+      const worker=html2pdf().set(options).from(clone);
+      await worker.toCanvas();
+      const canvas=await worker.get('canvas');
+      if(!canvas || !canvas.width || !canvas.height) throw new Error('The PDF renderer returned an empty canvas.');
 
-      // Catch a failed all-white render before emailing a useless attachment.
+      // Refuse to email an all-white page.
       const ctx=canvas.getContext('2d',{willReadFrequently:true});
       const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;
       let nonWhite=0;
-      const step=Math.max(4,Math.floor((pixels.length/4)/6000)*4);
-      for(let i=0;i<pixels.length;i+=step){
-        if(pixels[i]<245 || pixels[i+1]<245 || pixels[i+2]<245){ nonWhite++; if(nonWhite>20) break; }
+      const pixelCount=pixels.length/4;
+      const stride=Math.max(1,Math.floor(pixelCount/8000));
+      for(let px=0;px<pixelCount;px+=stride){
+        const i=px*4;
+        if(pixels[i]<245 || pixels[i+1]<245 || pixels[i+2]<245){ nonWhite++; if(nonWhite>25) break; }
       }
-      if(nonWhite<=20) throw new Error('The invoice PDF rendered blank. Please refresh the page and try again.');
+      if(nonWhite<=25) throw new Error('The invoice PDF rendered blank. Refresh the page and try again.');
 
-      const JsPDF=window.jspdf?.jsPDF || window.jsPDF;
-      if(!JsPDF) throw new Error('PDF generator has not loaded. Refresh the page and try again.');
-      const pdf=new JsPDF({unit:'mm',format:'a4',orientation:'portrait',compress:true});
-      const pageWidth=210, pageHeight=297;
-      const imgWidth=pageWidth;
-      const imgHeight=(canvas.height*imgWidth)/canvas.width;
-      const imgData=canvas.toDataURL('image/jpeg',0.96);
-      let heightLeft=imgHeight;
-      let position=0;
-      pdf.addImage(imgData,'JPEG',0,position,imgWidth,imgHeight,undefined,'FAST');
-      heightLeft-=pageHeight;
-      while(heightLeft>0){
-        position=heightLeft-imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData,'JPEG',0,position,imgWidth,imgHeight,undefined,'FAST');
-        heightLeft-=pageHeight;
-      }
-      const blob=pdf.output('blob');
+      await worker.toPdf();
+      const blob=await worker.outputPdf('blob');
       if(!(blob instanceof Blob) || blob.size<1500) throw new Error('The generated PDF is unexpectedly empty.');
       return blob;
     } finally {
