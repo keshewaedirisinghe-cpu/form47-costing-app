@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0b0d10" />
+  <title>47 Costing, Invoice & Quotation App</title>
+  <style>
+    :root{
+      --bg:#090b0e;--panel:#11151a;--panel2:#171c22;--line:#28313a;
+      --text:#f4f7fa;--muted:#98a4b2;--accent:#ff6500;--accent-soft:rgba(255,101,0,.13);
+      --green:#7cff6b;--blue:#52d6ff;--danger:#ff6f6f;--shadow:0 20px 50px rgba(0,0,0,.35);
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at top left,#1e1712 0,transparent 30%),var(--bg);color:var(--text);min-height:100vh}
+    button,input,select,textarea{font:inherit}
+    button{cursor:pointer}
+    .wrap{max-width:1220px;margin:0 auto;padding:28px 18px 60px}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:18px}
+    .brand{display:flex;gap:14px;align-items:center}.brand-logo{width:170px;max-width:38vw;height:54px;object-fit:contain;object-position:left center}
+    .brand-copy h1{font-size:clamp(20px,3vw,30px);margin:0 0 2px;letter-spacing:-.03em}.sub{margin:0;color:var(--muted);font-size:13px}
+    .badge{border:1px solid var(--line);background:rgba(255,255,255,.03);padding:8px 11px;border-radius:999px;color:var(--muted);font-size:12px;white-space:nowrap}
+    .tabs{display:flex;gap:8px;margin-bottom:18px;background:#0c1014;border:1px solid var(--line);padding:6px;border-radius:14px;width:max-content;max-width:100%}
+    .tab{border:0;border-radius:10px;background:transparent;color:var(--muted);padding:10px 15px;font-weight:800}.tab.active{background:var(--accent-soft);color:#ff944c}
+    .view{display:none}.view.active{display:block}
+    .grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(340px,.8fr);gap:20px}
+    .invoice-grid{display:grid;grid-template-columns:minmax(320px,.72fr) minmax(520px,1.28fr);gap:20px;align-items:start}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.015)),var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .card .head{padding:20px 22px;border-bottom:1px solid var(--line)}.card .head h2{font-size:16px;margin:0 0 4px}.card .head p{font-size:12px;color:var(--muted);margin:0;line-height:1.5}.body{padding:20px 22px}
+    .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.full{grid-column:1/-1}
+    label{display:block;font-size:12px;color:#c7d0d9;margin-bottom:7px;font-weight:650}
+    input,select,textarea{width:100%;padding:12px 13px;border-radius:12px;border:1px solid var(--line);background:#0c1014;color:var(--text);outline:none;transition:.18s border-color,.18s box-shadow}
+    textarea{resize:vertical;min-height:88px}input:focus,select:focus,textarea:focus{border-color:#ff7f2d;box-shadow:0 0 0 3px rgba(255,101,0,.10)}input[readonly]{opacity:.78;background:#111820}
+    .helper{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.45}.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}.seg button{border:1px solid var(--line);background:#0c1014;color:var(--muted);border-radius:12px;padding:12px;font-weight:750}.seg button.active{background:var(--accent-soft);border-color:rgba(255,101,0,.52);color:#ff944c}
+    .divider{height:1px;background:var(--line);margin:20px 0}.paint-fields{display:none}.paint-fields.show{display:contents}.results{position:sticky;top:18px}.hero-price{padding:24px 22px 18px}.kicker{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.11em}.price{font-size:clamp(40px,7vw,64px);line-height:1;margin:8px 0 6px;font-weight:900;letter-spacing:-.06em}.price small{font-size:18px;color:var(--muted);letter-spacing:0;margin-right:5px}.profit{display:inline-flex;gap:7px;align-items:center;color:var(--green);font-size:13px;font-weight:700}.rows{padding:6px 22px 20px}.row{display:flex;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px dashed #29313a;font-size:13px}.row:last-child{border-bottom:0}.row span:first-child{color:var(--muted)}.row.total{font-size:15px;font-weight:800;padding-top:15px}.row.total span:first-child{color:var(--text)}
+    .actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 22px 22px}.actions.three{grid-template-columns:repeat(3,1fr)}button.action{padding:12px 14px;border-radius:12px;border:1px solid var(--line);font-weight:800}.primary{background:var(--accent);border-color:var(--accent)!important;color:#fff}.secondary{background:#0c1014;color:var(--text)}.note{font-size:11px;color:var(--muted);line-height:1.55;padding:0 22px 22px}.settings-toggle{display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:0;border:0;background:transparent;color:var(--text);width:100%}.settings{display:none;margin-top:16px}.settings.open{display:block}.tiny{font-size:11px;color:var(--muted)}.status{min-height:18px;margin-top:10px;font-size:12px;color:var(--green)}
+    .sync-box{border:1px solid rgba(255,101,0,.35);background:var(--accent-soft);border-radius:14px;padding:13px 14px;margin-bottom:16px}.sync-box strong{display:block;font-size:13px;margin-bottom:4px}.sync-box span{font-size:11px;color:#caa994;line-height:1.5}.mini-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.mini-btn{border:1px solid var(--line);background:#111820;color:var(--text);border-radius:10px;padding:9px 11px;font-size:12px;font-weight:800}.mini-btn.primary{background:var(--accent);color:#fff}
+    .invoice-shell{position:sticky;top:18px}.invoice-toolbar{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px 14px;border:1px solid var(--line);border-radius:14px 14px 0 0;background:#0e1216}.invoice-toolbar span{font-size:12px;color:var(--muted)}.invoice-toolbar .mini-actions{margin:0}
+    .invoice-paper{background:#fff;color:#151515;min-height:900px;padding:50px 54px;box-shadow:0 22px 60px rgba(0,0,0,.28);border-radius:0 0 14px 14px;overflow:hidden}
+    .inv-top{display:flex;justify-content:space-between;gap:30px;align-items:flex-start}.inv-logo{width:270px;max-height:88px;object-fit:contain;object-position:left center}.inv-title{text-align:right}.inv-title h2{font-size:32px;letter-spacing:.08em;margin:0 0 9px}.inv-title .meta{font-size:12px;line-height:1.7;color:#555}
+    .inv-rule{height:3px;background:#171717;margin:30px 0 28px}.inv-parties{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-bottom:34px}.inv-label{font-size:10px;text-transform:uppercase;letter-spacing:.15em;color:#888;font-weight:800;margin-bottom:7px}.inv-party{font-size:13px;line-height:1.65;white-space:pre-line}.inv-party strong{font-size:15px}.inv-party.right{text-align:right}
+    .inv-table{width:100%;border-collapse:collapse;margin-top:6px}.inv-table th{font-size:10px;text-transform:uppercase;letter-spacing:.11em;text-align:left;padding:12px 10px;border-bottom:2px solid #171717}.inv-table td{font-size:13px;padding:17px 10px;border-bottom:1px solid #ddd;vertical-align:top}.inv-table th:nth-child(3),.inv-table th:nth-child(4),.inv-table th:nth-child(5),.inv-table td:nth-child(3),.inv-table td:nth-child(4),.inv-table td:nth-child(5){text-align:right}.inv-desc-sub{font-size:11px;color:#777;margin-top:4px}.inv-summary{width:min(330px,100%);margin:24px 0 0 auto}.inv-sum-row{display:flex;justify-content:space-between;gap:20px;padding:9px 0;font-size:13px}.inv-sum-row.total{font-size:20px;font-weight:900;border-top:2px solid #171717;margin-top:5px;padding-top:13px}.inv-notes{margin-top:55px;border-top:1px solid #ddd;padding-top:17px}.inv-notes .text{font-size:12px;color:#555;line-height:1.6;white-space:pre-line}.inv-footer{margin-top:60px;font-size:10px;color:#8a8a8a;text-align:center;letter-spacing:.05em}
+    .brand-pill{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;padding:6px 10px;color:var(--muted);font-size:11px}.dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+    .advance-box{margin-top:26px;border:2px solid #171717;padding:16px 18px;display:flex;justify-content:space-between;gap:20px;align-items:center}.advance-box .copy{font-size:12px;line-height:1.55;color:#444}.advance-box .copy strong{display:block;color:#111;font-size:13px;margin-bottom:2px}.advance-box .amount{font-size:20px;font-weight:900;white-space:nowrap}.bank-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 24px;margin-top:8px}.bank-item{font-size:12px;line-height:1.5}.bank-item span{display:block;color:#888;font-size:9px;text-transform:uppercase;letter-spacing:.11em;font-weight:800}.terms-box{margin-top:24px;background:#f6f6f6;border-left:4px solid #171717;padding:15px 16px;font-size:12px;line-height:1.6;color:#444}.terms-box strong{color:#111}
+    .item-manager{margin-top:14px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#0c1014}.item-manager-head{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:11px 12px;border-bottom:1px solid var(--line);font-size:11px;color:var(--muted)}.item-manager-list{display:grid}.item-edit-row{display:grid;grid-template-columns:minmax(0,1fr) 86px 128px 34px;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid #202831}.item-edit-row:last-child{border-bottom:0}.item-edit-row input{padding:9px 10px;border-radius:9px;font-size:12px}.item-edit-row .item-price-input{text-align:right;font-weight:800}.remove-item{width:34px;height:34px;border:1px solid #443035;background:#211316;color:#ff8585;border-radius:9px;font-weight:900}.empty-items{padding:14px 12px;color:var(--muted);font-size:12px}.item-count{font-weight:800;color:var(--text)}.add-item-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.inv-table tbody tr{break-inside:avoid}.inv-table .empty-row td{text-align:center!important;color:#888;padding:24px 10px}.item-brand-tag{display:inline-block;margin-top:4px;font-size:9px;letter-spacing:.09em;color:#888;text-transform:uppercase}
+    .manual-price-note{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:7px}.manual-price-note .helper{margin:0}.email-box{margin-top:20px;padding:16px;border:1px solid #33404b;border-radius:14px;background:#0b1015}.email-box .email-title{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px}.email-box .email-title strong{font-size:13px}.email-box .email-title span{font-size:10px;color:var(--muted)}.email-box textarea{min-height:190px}.email-status{min-height:18px;margin-top:9px;font-size:11px;color:var(--green);line-height:1.5}.email-status.error{color:#ff8f8f}.oauth-help{padding:10px 12px;border-radius:10px;background:#111820;border:1px solid var(--line);font-size:10px;line-height:1.5;color:var(--muted)}.oauth-help strong{color:var(--text)}
+    @media(max-width:1000px){.invoice-grid{grid-template-columns:1fr}.invoice-shell{position:static}.invoice-paper{min-height:auto}}
+    @media(max-width:850px){.grid{grid-template-columns:1fr}.results{position:static}.badge{display:none}}
+    @media(max-width:620px){.wrap{padding:18px 12px 40px}.topbar{align-items:flex-start}.brand-copy{display:none}.brand-logo{width:190px;max-width:58vw}.form-grid{grid-template-columns:1fr}.full{grid-column:auto}.card .head,.body,.hero-price,.rows{padding-left:16px;padding-right:16px}.actions,.note{padding-left:16px;padding-right:16px}.actions.three{grid-template-columns:1fr}.invoice-paper{padding:28px 22px}.inv-top{display:block}.inv-logo{width:230px}.inv-title{text-align:left;margin-top:28px}.inv-parties{grid-template-columns:1fr}.inv-party.right{text-align:left}.invoice-toolbar{align-items:flex-start;flex-direction:column}.inv-table th:nth-child(2),.inv-table td:nth-child(2){display:none}.advance-box{align-items:flex-start;flex-direction:column}.bank-grid{grid-template-columns:1fr}}
+    @media print{
+      @page{size:A4;margin:0}
+      body.print-invoice,body.print-quotation{background:#fff}
+      .print-invoice .wrap,.print-quotation .wrap{padding:0;max-width:none}
+      .print-invoice .topbar,.print-invoice .tabs,.print-invoice #calculatorView,.print-invoice #quotationView,.print-invoice .invoice-form-card,.print-invoice .invoice-toolbar{display:none!important}
+      .print-invoice #invoiceView{display:block!important}.print-invoice .invoice-grid{display:block}.print-invoice .invoice-shell{position:static}.print-invoice .invoice-paper{box-shadow:none;border-radius:0;min-height:297mm;padding:18mm 16mm;width:210mm;margin:0 auto}.print-invoice .inv-logo{max-width:78mm}
+      .print-quotation .topbar,.print-quotation .tabs,.print-quotation #calculatorView,.print-quotation #invoiceView,.print-quotation .quotation-form-card,.print-quotation .invoice-toolbar{display:none!important}
+      .print-quotation #quotationView{display:block!important}.print-quotation .invoice-grid{display:block}.print-quotation .invoice-shell{position:static}.print-quotation .invoice-paper{box-shadow:none;border-radius:0;min-height:297mm;padding:18mm 16mm;width:210mm;margin:0 auto}.print-quotation .inv-logo{max-width:78mm}
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">
+      <img class="brand-logo" src="assets/form47.png" alt="FORM47 logo" />
+      <div class="brand-copy"><h1>Costing, Invoice & Quotation</h1><p class="sub">Internal print costing + clean client documents</p></div>
+    </div>
+    <div class="badge">GitHub Pages ready · Data stays in your browser</div>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab active" id="costTab" type="button">Cost Calculator</button>
+    <button class="tab" id="invoiceTab" type="button">Invoice Generator</button>
+    <button class="tab" id="quotationTab" type="button">Quotation Generator</button>
+  </div>
+
+  <section class="view active" id="calculatorView">
+    <div class="grid">
+      <section class="card inputs-card">
+        <div class="head"><h2>Part details</h2><p>Enter values from the slicer, choose the 47 category and select the finish.</p></div>
+        <div class="body">
+          <div class="form-grid">
+            <div><label for="category">Printed under</label><select id="category"><option value="FORM47">FORM47</option><option value="NEXUS47">NEXUS47</option><option value="HAVEN47">HAVEN47</option></select></div>
+            <div><label for="partName">Part / Product name</label><input id="partName" value="New print" /></div>
+            <div><label for="material">Material</label><select id="material"><option value="PLA">PLA</option><option value="PETG">PETG</option><option value="ABS/ASA">ABS / ASA</option><option value="TPU">TPU</option><option value="Custom">Custom</option></select></div>
+            <div><label for="materialPrice">Filament price / kg (LKR)</label><input id="materialPrice" type="number" min="0" step="50" value="5000" /></div>
+            <div><label for="weight">Part weight (g)</label><input id="weight" type="number" min="0" step="0.01" value="185.43" /></div>
+            <div><label for="hours">Print hours</label><input id="hours" type="number" min="0" step="1" value="7" /></div>
+            <div><label for="minutes">Print minutes</label><input id="minutes" type="number" min="0" max="59" step="1" value="19" /></div>
+            <div class="full"><label>Finish</label><div class="seg"><button type="button" id="rawBtn" class="active">Raw print</button><button type="button" id="paintBtn">Hand-painted</button></div></div>
+            <div class="paint-fields" id="paintFields">
+              <div><label for="paintMaterial">Paint / finishing materials (LKR)</label><input id="paintMaterial" type="number" min="0" step="50" value="350" /></div>
+              <div><label for="paintHours">Painting labour (hours)</label><input id="paintHours" type="number" min="0" step="0.25" value="1.5" /></div>
+            </div>
+            <div><label for="cleanupMinutes">Cleanup / prep labour (min)</label><input id="cleanupMinutes" type="number" min="0" step="5" value="15" /></div>
+            <div><label for="packaging">Packaging (LKR)</label><input id="packaging" type="number" min="0" step="50" value="150" /></div>
+          </div>
+
+          <div class="divider"></div>
+          <button class="settings-toggle" id="settingsToggle" type="button"><span><strong>Business settings</strong><br><span class="tiny">Machine rate, electricity, labour, failure allowance & margin</span></span><span id="chev">＋</span></button>
+          <div class="settings" id="settings">
+            <div class="form-grid">
+              <div><label for="machineRate">Machine cost / hour (LKR)</label><input id="machineRate" type="number" min="0" step="25" value="125" /></div>
+              <div><label for="electricityRate">Electricity / print hour (LKR)</label><input id="electricityRate" type="number" min="0" step="5" value="15" /><div class="helper">Simple hourly estimate. Replace this later with your measured SparkX i7 rate.</div></div>
+              <div><label for="labourRate">Labour / hour (LKR)</label><input id="labourRate" type="number" min="0" step="50" value="500" /></div>
+              <div><label for="failurePct">Failure / waste allowance (%)</label><input id="failurePct" type="number" min="0" max="100" step="1" value="10" /></div>
+              <div><label for="margin">Target gross margin (%)</label><input id="margin" type="number" min="0" max="95" step="1" value="40" /></div>
+              <div><label for="roundTo">Round selling price to (LKR)</label><select id="roundTo"><option value="1">No rounding</option><option value="10">Nearest 10</option><option value="50" selected>Nearest 50</option><option value="100">Nearest 100</option><option value="500">Nearest 500</option></select></div>
+            </div>
+            <div class="status" id="status"></div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="card results">
+        <div class="hero-price"><div class="kicker">Recommended selling price</div><div class="price"><small>Rs.</small><span id="sellingPrice">0</span></div><div class="profit">Estimated profit: Rs. <span id="profit">0</span></div></div>
+        <div class="rows">
+          <div class="row"><span>Category</span><strong id="categoryOut">FORM47</strong></div>
+          <div class="row"><span>Material cost</span><strong id="materialCost">Rs. 0</strong></div><div class="row"><span>Machine time</span><strong id="machineCost">Rs. 0</strong></div><div class="row"><span>Electricity</span><strong id="electricityCost">Rs. 0</strong></div><div class="row"><span>Cleanup / prep labour</span><strong id="cleanupCost">Rs. 0</strong></div><div class="row" id="paintMaterialRow" style="display:none"><span>Paint / finishing material</span><strong id="paintMaterialCost">Rs. 0</strong></div><div class="row" id="paintLabourRow" style="display:none"><span>Painting labour</span><strong id="paintLabourCost">Rs. 0</strong></div><div class="row"><span>Failure / waste allowance</span><strong id="failureCost">Rs. 0</strong></div><div class="row"><span>Packaging</span><strong id="packagingCost">Rs. 0</strong></div><div class="row total"><span>Total production cost</span><strong id="totalCost">Rs. 0</strong></div><div class="row"><span>Target gross margin</span><strong id="marginOut">40%</strong></div><div class="row"><span>Print duration</span><strong id="durationOut">0h 0m</strong></div><div class="row"><span>Material / finish</span><strong id="finishOut">PLA · Raw</strong></div>
+        </div>
+        <div class="actions three"><button class="action secondary" id="copyBtn" type="button">Copy costing</button><button class="action secondary" id="makeQuoteBtn" type="button">Add to quotation</button><button class="action primary" id="makeInvoiceBtn" type="button">Add to invoice</button></div>
+        <div class="note">The calculator is your internal view. Client invoices and quotations only show the selling price, never production cost, profit or gross margin.</div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="view" id="invoiceView">
+    <div class="invoice-grid">
+      <section class="card invoice-form-card">
+        <div class="head"><h2>Invoice details</h2><p>The invoice price is locked to the calculator's recommended selling price. No internal costing or margin appears on the client invoice.</p></div>
+        <div class="body">
+          <div class="sync-box"><strong>Synced selling price: <span id="invoiceSyncPrice">Rs. 0</span></strong><span>Change the part, quantity or pricing in the Cost Calculator, then return here. Unit price updates automatically.</span><div class="mini-actions"><button class="mini-btn" id="backToCostBtn" type="button">Edit costing</button></div></div>
+          <div class="form-grid">
+            <div><label for="invoiceCategory">Brand / Category</label><select id="invoiceCategory"><option value="FORM47">FORM47</option><option value="NEXUS47">NEXUS47</option><option value="HAVEN47">HAVEN47</option></select></div>
+            <div><label for="invoiceNumber">Invoice number</label><input id="invoiceNumber" /></div>
+            <div><label for="invoiceDate">Invoice date</label><input id="invoiceDate" type="date" /></div>
+            <div><label for="dueDate">Due date</label><input id="dueDate" type="date" /></div>
+
+            <div class="full"><div class="divider"></div><div class="brand-pill"><span class="dot"></span> Client details</div></div>
+            <div><label for="clientName">Client name</label><input id="clientName" placeholder="Client / Company name" /></div>
+            <div><label for="clientPhone">Phone</label><input id="clientPhone" placeholder="Optional" /></div>
+            <div class="full"><label for="clientEmail">Email</label><input id="clientEmail" type="email" placeholder="Optional" /></div>
+            <div class="full"><label for="clientAddress">Billing address</label><textarea id="clientAddress" placeholder="Optional"></textarea></div>
+
+            <div class="full"><div class="divider"></div><div class="brand-pill"><span class="dot"></span> Items</div><div class="helper">Calculate each product separately, then add it here. Every item keeps the recommended selling price it had when added.</div></div>
+            <div class="full"><label for="invoiceDescription">Current item description</label><input id="invoiceDescription" /></div>
+            <div><label for="invoiceQty">Quantity</label><input id="invoiceQty" type="number" min="1" step="1" value="1" /></div>
+            <div><label for="invoiceUnitPrice">Item unit price (LKR)</label><input id="invoiceUnitPrice" type="number" min="0" step="50" /><div class="manual-price-note"><div class="helper">Editable — enter any manual selling value.</div><button class="mini-btn" id="invoiceUseRecommendedBtn" type="button">Use recommended</button></div></div>
+            <div class="full">
+              <div class="add-item-row"><button class="mini-btn primary" id="addInvoiceItemBtn" type="button">＋ Add current item</button><button class="mini-btn" id="clearInvoiceItemsBtn" type="button">Clear all items</button></div>
+              <div class="item-manager" id="invoiceItemManager"><div class="item-manager-head"><span>Invoice items</span><span><span class="item-count" id="invoiceItemCount">0</span> item(s)</span></div><div class="item-manager-list" id="invoiceItemList"></div></div>
+            </div>
+            <div class="full"><label for="invoiceNotes">Notes / payment instructions</label><textarea id="invoiceNotes" placeholder="Thank you for your order."></textarea></div>
+
+            <div class="full"><div class="divider"></div><div class="brand-pill"><span class="dot"></span> Your invoice details</div></div>
+            <div><label for="sellerName">Issued by</label><input id="sellerName" value="47 Studio" /></div>
+            <div><label for="sellerPhone">Phone</label><input id="sellerPhone" placeholder="Optional" /></div>
+            <div class="full"><label for="sellerEmail">Email</label><input id="sellerEmail" type="email" placeholder="Optional" /></div>
+            <div class="full"><label for="sellerAddress">Address</label><textarea id="sellerAddress" placeholder="Optional"></textarea></div>
+          </div>
+
+          <div class="email-box">
+            <div class="email-title"><strong>Order-ready email</strong><span>Invoice PDF attaches automatically</span></div>
+            <div class="form-grid">
+              <div><label for="invoiceSender">Send from</label><select id="invoiceSender"><option value="4orm.4orty.7even@gmail.com">4orm.4orty.7even@gmail.com</option><option value="nexus.4orty.7even@gmail.com">nexus.4orty.7even@gmail.com</option><option value="haven.4orty.7even@gmail.com">haven.4orty.7even@gmail.com</option></select></div>
+              <div><label for="gmailClientIdInvoice">Google OAuth Client ID</label><input id="gmailClientIdInvoice" placeholder="xxxxxxxx.apps.googleusercontent.com" /></div>
+              <div class="full"><div class="oauth-help"><strong>One-time setup:</strong> use a Google Cloud Web OAuth Client ID with the Gmail API enabled and your GitHub Pages address added as an authorized JavaScript origin. The app requests only Gmail send permission. Never enter a Gmail password or App Password here.</div></div>
+              <div class="full"><label for="invoiceEmailSubject">Subject</label><input id="invoiceEmailSubject" /></div>
+              <div class="full"><label for="invoiceEmailBody">Email message</label><textarea id="invoiceEmailBody"></textarea></div>
+            </div>
+            <div class="mini-actions"><button class="mini-btn" id="generateInvoiceEmailBtn" type="button">Regenerate message</button><button class="mini-btn primary" id="sendInvoiceEmailBtn" type="button">Send email + invoice PDF</button></div>
+            <div class="email-status" id="invoiceEmailStatus"></div>
+          </div>
+
+          <div class="mini-actions"><button class="mini-btn" id="newInvoiceBtn" type="button">New invoice number</button><button class="mini-btn" id="clearClientBtn" type="button">Clear client</button></div>
+        </div>
+      </section>
+
+      <section class="invoice-shell">
+        <div class="invoice-toolbar"><span>Client preview · A4 ready</span><div class="mini-actions"><button class="mini-btn" id="copyInvoiceBtn" type="button">Copy summary</button><button class="mini-btn primary" id="printInvoiceBtn" type="button">Print / Save PDF</button></div></div>
+        <article class="invoice-paper" id="invoicePaper">
+          <div class="inv-top">
+            <img class="inv-logo" id="invoiceLogo" src="assets/form47.png" alt="Invoice brand logo" />
+            <div class="inv-title"><h2>INVOICE</h2><div class="meta">Invoice <strong id="pInvoiceNumber">—</strong><br>Date <span id="pInvoiceDate">—</span><br>Due <span id="pDueDate">—</span></div></div>
+          </div>
+          <div class="inv-rule" id="invoiceRule"></div>
+          <div class="inv-parties">
+            <div><div class="inv-label">Bill to</div><div class="inv-party" id="pClient">Client name</div></div>
+            <div><div class="inv-label" style="text-align:right">Issued by</div><div class="inv-party right" id="pSeller">47 Studio</div></div>
+          </div>
+          <table class="inv-table">
+            <thead><tr><th>Description</th><th>Details</th><th>Qty</th><th>Unit price</th><th>Amount</th></tr></thead>
+            <tbody id="invoiceItemsBody"></tbody>
+          </table>
+          <div class="inv-summary"><div class="inv-sum-row"><span>Subtotal</span><strong id="pSubtotal">Rs. 0</strong></div><div class="inv-sum-row total"><span>Total</span><span id="pTotal">Rs. 0</span></div></div>
+          <div class="inv-notes"><div class="inv-label">Notes</div><div class="text" id="pNotes">Thank you for your order.</div></div>
+          <div class="inv-footer" id="pFooter">FORM47 · DESIGN · PRINT · CREATE</div>
+        </article>
+      </section>
+    </div>
+  </section>
+
+
+  <section class="view" id="quotationView">
+    <div class="invoice-grid">
+      <section class="card quotation-form-card">
+        <div class="head"><h2>Quotation details</h2><p>The quotation uses the calculator's recommended selling price and includes a 50% advance requirement to begin printing.</p></div>
+        <div class="body">
+          <div class="sync-box"><strong>Synced selling price: <span id="quoteSyncPrice">Rs. 0</span></strong><span>Unit price is locked to the Cost Calculator. A 50% advance is calculated automatically from the quotation total.</span><div class="mini-actions"><button class="mini-btn" id="quoteBackToCostBtn" type="button">Edit costing</button></div></div>
+          <div class="form-grid">
+            <div><label for="quoteCategory">Brand / Category</label><select id="quoteCategory"><option value="FORM47">FORM47</option><option value="NEXUS47">NEXUS47</option><option value="HAVEN47">HAVEN47</option></select></div>
+            <div><label for="quoteNumber">Quotation number</label><input id="quoteNumber" /></div>
+            <div><label for="quoteDate">Quotation date</label><input id="quoteDate" type="date" /></div>
+            <div><label for="quoteValidUntil">Valid until</label><input id="quoteValidUntil" type="date" /></div>
+
+            <div class="full"><div class="divider"></div><div class="brand-pill"><span class="dot"></span> Client details</div></div>
+            <div><label for="quoteClientName">Client name</label><input id="quoteClientName" placeholder="Client / Company name" /></div>
+            <div><label for="quoteClientPhone">Phone</label><input id="quoteClientPhone" placeholder="Optional" /></div>
+            <div class="full"><label for="quoteClientEmail">Email</label><input id="quoteClientEmail" type="email" placeholder="Optional" /></div>
+            <div class="full"><label for="quoteClientAddress">Address</label><textarea id="quoteClientAddress" placeholder="Optional"></textarea></div>
+
+            <div class="full"><div class="divider"></div><div class="brand-pill"><span class="dot"></span> Items</div><div class="helper">Add as many separately-costed products as needed. Each line keeps its own recommended selling price.</div></div>
+            <div class="full"><label for="quoteDescription">Current item description</label><input id="quoteDescription" /></div>
+            <div><label for="quoteQty">Quantity</label><input id="quoteQty" type="number" min="1" step="1" value="1" /></div>
+            <div><label for="quoteUnitPrice">Item unit price (LKR)</label><input id="quoteUnitPrice" type="number" min="0" step="50" /><div class="manual-price-note"><div class="helper">Editable — enter any manual quotation value.</div><button class="mini-btn" id="quoteUseRecommendedBtn" type="button">Use recommended</button></div></div>
+            <div class="full">
+              <div class="add-item-row"><button class="mini-btn primary" id="addQuoteItemBtn" type="button">＋ Add current item</button><button class="mini-btn" id="clearQuoteItemsBtn" type="button">Clear all items</button></div>
+              <div class="item-manager" id="quoteItemManager"><div class="item-manager-head"><span>Quotation items</span><span><span class="item-count" id="quoteItemCount">0</span> item(s)</span></div><div class="item-manager-list" id="quoteItemList"></div></div>
+            </div>
+            <div class="full"><label for="quoteNotes">Notes</label><textarea id="quoteNotes" placeholder="Optional quotation notes"></textarea></div>
+
+            <div class="full"><div class="divider"></div><div class="brand-pill"><span class="dot"></span> Your business details</div></div>
+            <div><label for="quoteSellerName">Issued by</label><input id="quoteSellerName" value="47 Studio" /></div>
+            <div><label for="quoteSellerPhone">Phone</label><input id="quoteSellerPhone" placeholder="Optional" /></div>
+            <div class="full"><label for="quoteSellerEmail">Email</label><input id="quoteSellerEmail" type="email" placeholder="Optional" /></div>
+            <div class="full"><label for="quoteSellerAddress">Address</label><textarea id="quoteSellerAddress" placeholder="Optional"></textarea></div>
+
+            <div class="full"><div class="divider"></div><div class="brand-pill"><span class="dot"></span> Bank details</div><div class="helper">Enter these once. They are saved only in this browser and printed on every quotation.</div></div>
+            <div><label for="bankName">Bank name</label><input id="bankName" placeholder="e.g. Commercial Bank" /></div>
+            <div><label for="bankBranch">Branch</label><input id="bankBranch" placeholder="e.g. Maharagama" /></div>
+            <div><label for="bankAccountName">Account name</label><input id="bankAccountName" placeholder="Account holder name" /></div>
+            <div><label for="bankAccountNumber">Account number</label><input id="bankAccountNumber" inputmode="numeric" placeholder="Account number" /></div>
+          </div>
+
+          <div class="email-box">
+            <div class="email-title"><strong>Send quotation to client</strong><span>Quotation PDF attaches automatically</span></div>
+            <div class="form-grid">
+              <div><label for="quoteSender">Send from</label><select id="quoteSender"><option value="4orm.4orty.7even@gmail.com">4orm.4orty.7even@gmail.com</option><option value="nexus.4orty.7even@gmail.com">nexus.4orty.7even@gmail.com</option><option value="haven.4orty.7even@gmail.com">haven.4orty.7even@gmail.com</option></select></div>
+              <div><label for="gmailClientIdQuote">Google OAuth Client ID</label><input id="gmailClientIdQuote" placeholder="xxxxxxxx.apps.googleusercontent.com" /></div>
+              <div class="full"><div class="oauth-help"><strong>One-time setup:</strong> same OAuth Client ID as the invoice section. It is saved only in your browser. The access token is kept only in memory and is never saved.</div></div>
+              <div class="full"><label for="quoteEmailSubject">Subject</label><input id="quoteEmailSubject" /></div>
+              <div class="full"><label for="quoteEmailBody">Email message</label><textarea id="quoteEmailBody"></textarea></div>
+            </div>
+            <div class="mini-actions"><button class="mini-btn" id="generateQuoteEmailBtn" type="button">Regenerate message</button><button class="mini-btn primary" id="sendQuoteEmailBtn" type="button">Send email + quotation PDF</button></div>
+            <div class="email-status" id="quoteEmailStatus"></div>
+          </div>
+
+          <div class="mini-actions"><button class="mini-btn" id="newQuoteBtn" type="button">New quotation number</button><button class="mini-btn" id="clearQuoteClientBtn" type="button">Clear client</button></div>
+        </div>
+      </section>
+
+      <section class="invoice-shell">
+        <div class="invoice-toolbar"><span>Client preview · A4 ready</span><div class="mini-actions"><button class="mini-btn" id="copyQuoteBtn" type="button">Copy summary</button><button class="mini-btn primary" id="printQuoteBtn" type="button">Print / Save PDF</button></div></div>
+        <article class="invoice-paper" id="quotationPaper">
+          <div class="inv-top">
+            <img class="inv-logo" id="quoteLogo" src="assets/form47.png" alt="Quotation brand logo" />
+            <div class="inv-title"><h2>QUOTATION</h2><div class="meta">Quotation <strong id="pQuoteNumber">—</strong><br>Date <span id="pQuoteDate">—</span><br>Valid until <span id="pQuoteValidUntil">—</span></div></div>
+          </div>
+          <div class="inv-rule" id="quoteRule"></div>
+          <div class="inv-parties">
+            <div><div class="inv-label">Quotation for</div><div class="inv-party" id="pQuoteClient">Client name</div></div>
+            <div><div class="inv-label" style="text-align:right">Issued by</div><div class="inv-party right" id="pQuoteSeller">47 Studio</div></div>
+          </div>
+          <table class="inv-table">
+            <thead><tr><th>Description</th><th>Details</th><th>Qty</th><th>Unit price</th><th>Amount</th></tr></thead>
+            <tbody id="quoteItemsBody"></tbody>
+          </table>
+          <div class="inv-summary"><div class="inv-sum-row"><span>Subtotal</span><strong id="pQuoteSubtotal">Rs. 0</strong></div><div class="inv-sum-row total"><span>Quotation Total</span><span id="pQuoteTotal">Rs. 0</span></div></div>
+
+          <div class="advance-box" id="quoteAdvanceBox">
+            <div class="copy"><strong>50% advance required to start printing</strong>Production will begin after the advance payment is received.</div>
+            <div class="amount" id="pQuoteAdvance">Rs. 0</div>
+          </div>
+
+          <div class="inv-notes">
+            <div class="inv-label">Bank details</div>
+            <div class="bank-grid">
+              <div class="bank-item"><span>Bank</span><strong id="pBankName">—</strong></div>
+              <div class="bank-item"><span>Branch</span><strong id="pBankBranch">—</strong></div>
+              <div class="bank-item"><span>Account name</span><strong id="pBankAccountName">—</strong></div>
+              <div class="bank-item"><span>Account number</span><strong id="pBankAccountNumber">—</strong></div>
+            </div>
+          </div>
+
+          <div class="terms-box"><strong>Payment terms:</strong> A 50% advance payment is required to confirm the order and start the print process. Production starts once the advance payment has been received.</div>
+          <div class="inv-notes" id="quoteNotesBlock"><div class="inv-label">Notes</div><div class="text" id="pQuoteNotes">Thank you for considering us.</div></div>
+          <div class="inv-footer" id="pQuoteFooter">FORM47 · DESIGN · PRINT · CREATE</div>
+        </article>
+      </section>
+    </div>
+  </section>
+</div>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+  const $ = id => document.getElementById(id);
+  const calcIds = ['category','partName','material','materialPrice','weight','hours','minutes','paintMaterial','paintHours','cleanupMinutes','packaging','machineRate','electricityRate','labourRate','failurePct','margin','roundTo'];
+  const invoiceIds = ['invoiceCategory','invoiceNumber','invoiceDate','dueDate','clientName','clientPhone','clientEmail','clientAddress','invoiceDescription','invoiceQty','invoiceNotes','sellerName','sellerPhone','sellerEmail','sellerAddress','invoiceSender','invoiceEmailSubject','invoiceEmailBody'];
+  const quoteIds = ['quoteCategory','quoteNumber','quoteDate','quoteValidUntil','quoteClientName','quoteClientPhone','quoteClientEmail','quoteClientAddress','quoteDescription','quoteQty','quoteNotes','quoteSellerName','quoteSellerPhone','quoteSellerEmail','quoteSellerAddress','bankName','bankBranch','bankAccountName','bankAccountNumber','quoteSender','quoteEmailSubject','quoteEmailBody'];
+  const el = Object.fromEntries(calcIds.map(id => [id,$(id)]));
+  let finish = localStorage.getItem('form47_finish') || 'raw';
+  let last = {sellingPrice:0,totalCost:0,profit:0,printHours:0};
+
+  const brandData = {
+    FORM47:{logo:'assets/form47.png',accent:'#ff6500',footer:'FORM47 · DESIGN · PRINT · CREATE',prefix:'F47',email:'4orm.4orty.7even@gmail.com',team:'FORM47 Team'},
+    NEXUS47:{logo:'assets/nexus47.png',accent:'#d80712',footer:'NEXUS47 · GEAR FOR A HIGHER REALITY',prefix:'N47',email:'nexus.4orty.7even@gmail.com',team:'NEXUS47 Team'},
+    HAVEN47:{logo:'assets/haven47.png',accent:'#9a6a45',footer:'HAVEN47 · EVERYDAY SPACES, ELEVATED.',prefix:'H47',email:'haven.4orty.7even@gmail.com',team:'HAVEN47 Team'}
+  };
+  const whatsapp = '+94 76 847 4018';
+  const gmailTokens = {};
+
+  const money = n => 'Rs. ' + Math.round(Number(n || 0)).toLocaleString('en-LK');
+  const num = input => Math.max(0, Number(input.value) || 0);
+  const todayISO = () => { const d=new Date(); const off=d.getTimezoneOffset(); return new Date(d.getTime()-off*60000).toISOString().slice(0,10); };
+  const addDays = (iso,days) => { const d=new Date(iso+'T12:00:00'); d.setDate(d.getDate()+days); return d.toISOString().slice(0,10); };
+  const prettyDate = iso => { if(!iso) return '—'; const [y,m,d]=iso.split('-').map(Number); return new Date(y,m-1,d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); };
+  const safe = v => String(v||'').trim();
+  const uid = () => `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+  const loadItems = key => { try { const v=JSON.parse(localStorage.getItem(key)||'[]'); return Array.isArray(v)?v:[]; } catch { return []; } };
+  let invoiceItems = loadItems('47_invoice_items');
+  let quoteItems = loadItems('47_quote_items');
+
+  function saveItems(){
+    localStorage.setItem('47_invoice_items',JSON.stringify(invoiceItems));
+    localStorage.setItem('47_quote_items',JSON.stringify(quoteItems));
+  }
+
+  function showView(which){
+    const cost = which === 'cost', invoice = which === 'invoice', quotation = which === 'quotation';
+    $('calculatorView').classList.toggle('active',cost); $('invoiceView').classList.toggle('active',invoice); $('quotationView').classList.toggle('active',quotation);
+    $('costTab').classList.toggle('active',cost); $('invoiceTab').classList.toggle('active',invoice); $('quotationTab').classList.toggle('active',quotation);
+    if(invoice) syncInvoiceFromCalculator();
+    if(quotation) syncQuotationFromCalculator();
+  }
+
+  function setFinish(next){
+    finish=next; localStorage.setItem('form47_finish',finish);
+    $('rawBtn').classList.toggle('active',finish==='raw'); $('paintBtn').classList.toggle('active',finish==='painted');
+    $('paintFields').classList.toggle('show',finish==='painted'); $('paintMaterialRow').style.display=finish==='painted'?'flex':'none'; $('paintLabourRow').style.display=finish==='painted'?'flex':'none';
+    calculate();
+  }
+
+  function calculate(){
+    const printHours=num(el.hours)+(Math.min(59,num(el.minutes))/60);
+    const materialCost=(num(el.weight)/1000)*num(el.materialPrice);
+    const machineCost=printHours*num(el.machineRate);
+    const electricityCost=printHours*num(el.electricityRate);
+    const cleanupCost=(num(el.cleanupMinutes)/60)*num(el.labourRate);
+    const paintMaterialCost=finish==='painted'?num(el.paintMaterial):0;
+    const paintLabourCost=finish==='painted'?num(el.paintHours)*num(el.labourRate):0;
+    const manufacturingBase=materialCost+machineCost+electricityCost+cleanupCost+paintMaterialCost+paintLabourCost;
+    const failureCost=manufacturingBase*(num(el.failurePct)/100);
+    const packagingCost=num(el.packaging), totalCost=manufacturingBase+failureCost+packagingCost;
+    const margin=Math.min(95,num(el.margin)); let sellingPrice=totalCost/(1-margin/100);
+    const roundTo=Math.max(1,num(el.roundTo)); sellingPrice=Math.round(sellingPrice/roundTo)*roundTo; const profit=sellingPrice-totalCost;
+    last={sellingPrice,totalCost,profit,printHours};
+    $('sellingPrice').textContent=Math.round(sellingPrice).toLocaleString('en-LK'); $('profit').textContent=Math.round(profit).toLocaleString('en-LK');
+    $('categoryOut').textContent=el.category.value; $('materialCost').textContent=money(materialCost); $('machineCost').textContent=money(machineCost); $('electricityCost').textContent=money(electricityCost); $('cleanupCost').textContent=money(cleanupCost); $('paintMaterialCost').textContent=money(paintMaterialCost); $('paintLabourCost').textContent=money(paintLabourCost); $('failureCost').textContent=money(failureCost); $('packagingCost').textContent=money(packagingCost); $('totalCost').textContent=money(totalCost); $('marginOut').textContent=margin+'%'; $('durationOut').textContent=`${Math.floor(printHours)}h ${Math.round((printHours%1)*60)}m`; $('finishOut').textContent=`${el.material.value} · ${finish==='painted'?'Hand-painted':'Raw'}`;
+    calcIds.forEach(id=>localStorage.setItem('form47_'+id,el[id].value));
+    if($('invoiceView').classList.contains('active')) syncInvoiceFromCalculator();
+    if($('quotationView').classList.contains('active')) syncQuotationFromCalculator();
+  }
+
+  function currentItem(descriptionId, qtyId, priceId){
+    return {
+      id:uid(),
+      description:safe($(descriptionId).value)||safe(el.partName.value)||'3D Printed Product',
+      details:`${el.material.value} · ${finish==='painted'?'Hand-painted':'Raw'}`,
+      category:el.category.value,
+      qty:Math.max(1,Math.floor(num($(qtyId))||1)),
+      unitPrice:num($(priceId))
+    };
+  }
+
+  function generateInvoiceNumber(force=false){
+    if(!force && safe($('invoiceNumber').value)) return;
+    const category=$('invoiceCategory').value || el.category.value || 'FORM47', prefix=brandData[category].prefix;
+    let seq=Number(localStorage.getItem('47_invoice_seq')||0); if(force || !seq){seq+=1;localStorage.setItem('47_invoice_seq',seq);}
+    const date=($('invoiceDate').value || todayISO()).replaceAll('-',''); $('invoiceNumber').value=`${prefix}-${date}-${String(seq).padStart(3,'0')}`;
+  }
+
+  function generateQuoteNumber(force=false){
+    if(!force && safe($('quoteNumber').value)) return;
+    const category=$('quoteCategory').value || el.category.value || 'FORM47', prefix=brandData[category].prefix;
+    let seq=Number(localStorage.getItem('47_quote_seq')||0); if(force || !seq){seq+=1;localStorage.setItem('47_quote_seq',seq);}
+    const date=($('quoteDate').value || todayISO()).replaceAll('-',''); $('quoteNumber').value=`${prefix}-Q-${date}-${String(seq).padStart(3,'0')}`;
+  }
+
+  function setPartyPreview(targetId, lines){
+    const target=$(targetId); target.replaceChildren(); const clean=lines.filter(Boolean);
+    const strong=document.createElement('strong'); strong.textContent=clean[0]||'—'; target.appendChild(strong);
+    if(clean.length>1) target.appendChild(document.createTextNode('\n'+clean.slice(1).join('\n')));
+  }
+
+  function renderEditor(listId,countId,items,type){
+    const host=$(listId); host.replaceChildren(); $(countId).textContent=items.length;
+    if(!items.length){ const empty=document.createElement('div'); empty.className='empty-items'; empty.textContent='No items added yet. Calculate a product and add it to this document.'; host.appendChild(empty); return; }
+    items.forEach(item=>{
+      const row=document.createElement('div'); row.className='item-edit-row'; row.dataset.id=item.id;
+      const desc=document.createElement('input'); desc.value=item.description; desc.setAttribute('aria-label','Item description');
+      const qty=document.createElement('input'); qty.type='number'; qty.min='1'; qty.step='1'; qty.value=item.qty; qty.setAttribute('aria-label','Quantity');
+      const price=document.createElement('input'); price.type='number'; price.min='0'; price.step='50'; price.value=Math.round(item.unitPrice||0); price.className='item-price-input'; price.setAttribute('aria-label','Unit price');
+      const remove=document.createElement('button'); remove.type='button'; remove.className='remove-item'; remove.textContent='×'; remove.title='Remove item';
+      desc.addEventListener('change',()=>{ item.description=safe(desc.value)||'3D Printed Product'; saveItems(); if(type==='invoice'){updateInvoicePreview();generateInvoiceEmail();}else{updateQuotationPreview();generateQuoteEmail();} });
+      qty.addEventListener('change',()=>{ item.qty=Math.max(1,Math.floor(Number(qty.value)||1)); saveItems(); if(type==='invoice'){updateInvoicePreview();generateInvoiceEmail();}else{updateQuotationPreview();generateQuoteEmail();} });
+      price.addEventListener('change',()=>{ item.unitPrice=Math.max(0,Number(price.value)||0); saveItems(); if(type==='invoice'){updateInvoicePreview();generateInvoiceEmail();}else{updateQuotationPreview();generateQuoteEmail();} });
+      remove.addEventListener('click',()=>{ if(type==='invoice'){invoiceItems=invoiceItems.filter(x=>x.id!==item.id);saveItems();updateInvoicePreview();generateInvoiceEmail();} else {quoteItems=quoteItems.filter(x=>x.id!==item.id);saveItems();updateQuotationPreview();generateQuoteEmail();} });
+      row.append(desc,qty,price,remove); host.appendChild(row);
+    });
+  }
+
+  function renderDocumentRows(bodyId,items){
+    const body=$(bodyId); body.replaceChildren();
+    if(!items.length){ const tr=document.createElement('tr'); tr.className='empty-row'; const td=document.createElement('td'); td.colSpan=5; td.textContent='No items added.'; tr.appendChild(td); body.appendChild(tr); return; }
+    items.forEach(item=>{
+      const tr=document.createElement('tr');
+      const tdDesc=document.createElement('td'); const strong=document.createElement('strong'); strong.textContent=item.description; const sub=document.createElement('div'); sub.className='inv-desc-sub'; sub.textContent=item.category||'FORM47'; tdDesc.append(strong,sub);
+      const tdDetails=document.createElement('td'); tdDetails.textContent=item.details||'3D Print';
+      const tdQty=document.createElement('td'); tdQty.textContent=item.qty;
+      const tdUnit=document.createElement('td'); tdUnit.textContent=money(item.unitPrice);
+      const tdAmount=document.createElement('td'); const amount=document.createElement('strong'); amount.textContent=money(item.qty*item.unitPrice); tdAmount.appendChild(amount);
+      tr.append(tdDesc,tdDetails,tdQty,tdUnit,tdAmount); body.appendChild(tr);
+    });
+  }
+
+  function addInvoiceItem(openView=false){
+    if(invoiceItems.length===0) $('invoiceCategory').value=el.category.value;
+    if(openView || !safe($('invoiceDescription').value)) $('invoiceDescription').value=safe(el.partName.value)||'3D Printed Product';
+    if(openView) $('invoiceUnitPrice').value=Math.round(last.sellingPrice||0);
+    if(num($('invoiceUnitPrice'))<=0){ alert('Enter a valid item price first. You can use the recommended price or type a manual value.'); return; }
+    invoiceItems.push(currentItem('invoiceDescription','invoiceQty','invoiceUnitPrice')); saveItems(); updateInvoicePreview(); generateInvoiceEmail();
+    if(openView) showView('invoice');
+  }
+
+  function addQuoteItem(openView=false){
+    if(quoteItems.length===0) $('quoteCategory').value=el.category.value;
+    if(openView || !safe($('quoteDescription').value)) $('quoteDescription').value=safe(el.partName.value)||'3D Printed Product';
+    if(openView) $('quoteUnitPrice').value=Math.round(last.sellingPrice||0);
+    if(num($('quoteUnitPrice'))<=0){ alert('Enter a valid item price first. You can use the recommended price or type a manual value.'); return; }
+    quoteItems.push(currentItem('quoteDescription','quoteQty','quoteUnitPrice')); saveItems(); updateQuotationPreview(); generateQuoteEmail();
+    if(openView) showView('quotation');
+  }
+
+  function syncInvoiceFromCalculator(){
+    if(invoiceItems.length===0) $('invoiceCategory').value=el.category.value;
+    $('invoiceDescription').value=safe(el.partName.value)||'3D Printed Product'; $('invoiceUnitPrice').value=Math.round(last.sellingPrice); $('invoiceSyncPrice').textContent=money(last.sellingPrice);
+    if(!$('invoiceDate').value) $('invoiceDate').value=todayISO(); if(!$('dueDate').value) $('dueDate').value=addDays($('invoiceDate').value,7);
+    if(!$('invoiceNumber').value) generateInvoiceNumber(true); updateInvoicePreview();
+  }
+
+  function updateInvoicePreview(){
+    const category=$('invoiceCategory').value, brand=brandData[category];
+    $('invoiceLogo').src=brand.logo; $('invoiceRule').style.background=brand.accent; $('pFooter').textContent=brand.footer;
+    $('pInvoiceNumber').textContent=safe($('invoiceNumber').value)||'—'; $('pInvoiceDate').textContent=prettyDate($('invoiceDate').value); $('pDueDate').textContent=prettyDate($('dueDate').value);
+    setPartyPreview('pClient',[safe($('clientName').value)||'Client name',safe($('clientAddress').value),safe($('clientEmail').value),safe($('clientPhone').value)].filter(Boolean));
+    setPartyPreview('pSeller',[safe($('sellerName').value)||category,safe($('sellerAddress').value),safe($('sellerEmail').value),safe($('sellerPhone').value)].filter(Boolean));
+    renderEditor('invoiceItemList','invoiceItemCount',invoiceItems,'invoice'); renderDocumentRows('invoiceItemsBody',invoiceItems);
+    const total=invoiceItems.reduce((sum,item)=>sum+(item.qty*item.unitPrice),0); $('pSubtotal').textContent=money(total); $('pTotal').textContent=money(total); $('pNotes').textContent=safe($('invoiceNotes').value)||'Thank you for your order.';
+    $('invoiceSyncPrice').textContent=money(last.sellingPrice);
+    invoiceIds.forEach(id=>localStorage.setItem('invoice47_'+id,$(id).value)); saveItems();
+  }
+
+  function syncQuotationFromCalculator(){
+    if(quoteItems.length===0) $('quoteCategory').value=el.category.value;
+    $('quoteDescription').value=safe(el.partName.value)||'3D Printed Product'; $('quoteUnitPrice').value=Math.round(last.sellingPrice); $('quoteSyncPrice').textContent=money(last.sellingPrice);
+    if(!$('quoteDate').value) $('quoteDate').value=todayISO(); if(!$('quoteValidUntil').value) $('quoteValidUntil').value=addDays($('quoteDate').value,7);
+    if(!$('quoteNumber').value) generateQuoteNumber(true); updateQuotationPreview();
+  }
+
+  function updateQuotationPreview(){
+    const category=$('quoteCategory').value, brand=brandData[category];
+    $('quoteLogo').src=brand.logo; $('quoteRule').style.background=brand.accent; $('pQuoteFooter').textContent=brand.footer;
+    $('pQuoteNumber').textContent=safe($('quoteNumber').value)||'—'; $('pQuoteDate').textContent=prettyDate($('quoteDate').value); $('pQuoteValidUntil').textContent=prettyDate($('quoteValidUntil').value);
+    setPartyPreview('pQuoteClient',[safe($('quoteClientName').value)||'Client name',safe($('quoteClientAddress').value),safe($('quoteClientEmail').value),safe($('quoteClientPhone').value)].filter(Boolean));
+    setPartyPreview('pQuoteSeller',[safe($('quoteSellerName').value)||category,safe($('quoteSellerAddress').value),safe($('quoteSellerEmail').value),safe($('quoteSellerPhone').value)].filter(Boolean));
+    renderEditor('quoteItemList','quoteItemCount',quoteItems,'quotation'); renderDocumentRows('quoteItemsBody',quoteItems);
+    const total=quoteItems.reduce((sum,item)=>sum+(item.qty*item.unitPrice),0), advance=total*0.5;
+    $('pQuoteSubtotal').textContent=money(total); $('pQuoteTotal').textContent=money(total); $('pQuoteAdvance').textContent=money(advance);
+    $('pBankName').textContent=safe($('bankName').value)||'—'; $('pBankBranch').textContent=safe($('bankBranch').value)||'—'; $('pBankAccountName').textContent=safe($('bankAccountName').value)||'—'; $('pBankAccountNumber').textContent=safe($('bankAccountNumber').value)||'—';
+    const notes=safe($('quoteNotes').value); $('pQuoteNotes').textContent=notes||'Thank you for considering us.'; $('quoteNotesBlock').style.display=notes?'block':'none';
+    $('quoteSyncPrice').textContent=money(last.sellingPrice);
+    quoteIds.forEach(id=>localStorage.setItem('quote47_'+id,$(id).value)); saveItems();
+  }
+
+  function setEmailStatus(id,message,isError=false){
+    const node=$(id); node.textContent=message||''; node.classList.toggle('error',!!isError);
+  }
+
+  function itemNames(items){
+    return items.length ? items.map(item=>`${item.description}${Number(item.qty)>1?` × ${item.qty}`:''}`).filter(Boolean) : ['your 3D printed product'];
+  }
+
+  function itemLinesForEmail(items){
+    const names=itemNames(items);
+    if(names.length===1) return `Your order includes: ${names[0]}.`;
+    return `Your order includes:\n${names.map(name=>'• '+name).join('\n')}`;
+  }
+
+  function senderForBrand(category){ return brandData[category]?.email || brandData.FORM47.email; }
+
+  function generateInvoiceEmail(){
+    const category=$('invoiceCategory').value || 'FORM47', brand=brandData[category];
+    const name=safe($('clientName').value)||'there';
+    if(!$('invoiceSender').dataset.touched) $('invoiceSender').value=senderForBrand(category);
+    const sender=$('invoiceSender').value;
+    $('invoiceEmailSubject').value=`Your ${category} order is ready - Invoice ${safe($('invoiceNumber').value)||''}`.trim();
+    $('invoiceEmailBody').value=`Hi ${name},\n\nWe’re happy to let you know that your order is ready!\n\n${itemLinesForEmail(invoiceItems)}\n\nPlease find the attached invoice for your reference.\n\nThank you for choosing ${category}! We truly appreciate your support and hope you love your new product.\n\nIf you have any questions, please feel free to contact us.\n\nBest regards,\n${brand.team}\nEmail: ${sender}\nWhatsApp: ${whatsapp}`;
+    localStorage.setItem('invoice47_invoiceEmailSubject',$('invoiceEmailSubject').value);
+    localStorage.setItem('invoice47_invoiceEmailBody',$('invoiceEmailBody').value);
+  }
+
+  function generateQuoteEmail(){
+    const category=$('quoteCategory').value || 'FORM47', brand=brandData[category];
+    const name=safe($('quoteClientName').value)||'there';
+    if(!$('quoteSender').dataset.touched) $('quoteSender').value=senderForBrand(category);
+    const sender=$('quoteSender').value;
+    const total=quoteItems.reduce((sum,item)=>sum+item.qty*item.unitPrice,0);
+    $('quoteEmailSubject').value=`${category} quotation ${safe($('quoteNumber').value)||''}`.trim();
+    $('quoteEmailBody').value=`Hi ${name},\n\nThank you for your interest in ${category}.\n\nPlease find the attached quotation for the following item${quoteItems.length===1?'':'s'}:\n${itemNames(quoteItems).map(name=>'• '+name).join('\n')}\n\nQuotation total: ${money(total)}\n50% advance required to start the print process: ${money(total*0.5)}\n\nOnce the advance payment is received, we can confirm the order and begin production.\n\nIf you have any questions or would like any changes, please feel free to contact us.\n\nBest regards,\n${brand.team}\nEmail: ${sender}\nWhatsApp: ${whatsapp}`;
+    localStorage.setItem('quote47_quoteEmailSubject',$('quoteEmailSubject').value);
+    localStorage.setItem('quote47_quoteEmailBody',$('quoteEmailBody').value);
+  }
+
+  function syncGoogleClientId(value){
+    localStorage.setItem('47_google_client_id',value||'');
+    if($('gmailClientIdInvoice').value!==value) $('gmailClientIdInvoice').value=value;
+    if($('gmailClientIdQuote').value!==value) $('gmailClientIdQuote').value=value;
+  }
+
+  function requestGmailToken(sender){
+    return new Promise((resolve,reject)=>{
+      const clientId=safe($('gmailClientIdInvoice').value)||safe($('gmailClientIdQuote').value)||safe(localStorage.getItem('47_google_client_id'));
+      if(!clientId){ reject(new Error('Add your Google OAuth Client ID first.')); return; }
+      if(!window.google?.accounts?.oauth2){ reject(new Error('Google sign-in library has not loaded. Check your internet connection and try again.')); return; }
+      const cached=gmailTokens[sender];
+      if(cached && cached.expiresAt>Date.now()+60000){ resolve(cached.token); return; }
+      const tokenClient=google.accounts.oauth2.initTokenClient({
+        client_id:clientId,
+        scope:'https://www.googleapis.com/auth/gmail.send',
+        login_hint:sender,
+        callback:response=>{
+          if(response.error){ reject(new Error(response.error_description||response.error)); return; }
+          const token=response.access_token;
+          gmailTokens[sender]={token,expiresAt:Date.now()+((Number(response.expires_in)||3600)*1000)};
+          resolve(token);
+        },
+        error_callback:error=>reject(new Error(error?.message||error?.type||'Google sign-in was cancelled.'))
+      });
+      tokenClient.requestAccessToken({prompt:'select_account'});
+    });
+  }
+
+  async function verifySender(token,expected){
+    const r=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile',{headers:{Authorization:`Bearer ${token}`}});
+    if(!r.ok) throw new Error('Could not verify the selected Gmail account.');
+    const data=await r.json();
+    if(String(data.emailAddress||'').toLowerCase()!==expected.toLowerCase()) throw new Error(`Google is signed in as ${data.emailAddress||'another account'}. Please sign in with ${expected}.`);
+  }
+
+  async function documentPdfBlob(elementId){
+    if(!window.html2pdf) throw new Error('PDF library has not loaded. Check your internet connection and try again.');
+    const element=$(elementId);
+    const options={margin:0,image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff'},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css','legacy']}};
+    return await html2pdf().set(options).from(element).outputPdf('blob');
+  }
+
+  function blobToBase64(blob){
+    return new Promise((resolve,reject)=>{const reader=new FileReader(); reader.onload=()=>resolve(String(reader.result).split(',')[1]||''); reader.onerror=()=>reject(reader.error); reader.readAsDataURL(blob);});
+  }
+
+  function utf8ToBase64Url(text){
+    const bytes=new TextEncoder().encode(text); let binary=''; const chunk=0x8000;
+    for(let i=0;i<bytes.length;i+=chunk) binary+=String.fromCharCode(...bytes.subarray(i,i+chunk));
+    return btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  }
+
+  async function sendGmailWithPdf({sender,to,subject,body,pdfBlob,pdfName,token}){
+    const attachment=await blobToBase64(pdfBlob);
+    const boundary='47BOUNDARY_'+Date.now();
+    const mime=[
+      `From: ${sender}`,
+      `To: ${to}`,
+      `Subject: ${subject}`,
+      'MIME-Version: 1.0',
+      `Content-Type: multipart/mixed; boundary="${boundary}"`,
+      '',
+      `--${boundary}`,
+      'Content-Type: text/plain; charset="UTF-8"',
+      'Content-Transfer-Encoding: 8bit',
+      '',
+      body,
+      '',
+      `--${boundary}`,
+      `Content-Type: application/pdf; name="${pdfName}"`,
+      `Content-Disposition: attachment; filename="${pdfName}"`,
+      'Content-Transfer-Encoding: base64',
+      '',
+      (attachment.match(/.{1,76}/g)||[attachment]).join('\r\n'),
+      `--${boundary}--`,
+      ''
+    ].join('\r\n');
+    const raw=utf8ToBase64Url(mime);
+    const r=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify({raw})});
+    if(!r.ok){let msg='Gmail could not send the message.'; try{const e=await r.json();msg=e?.error?.message||msg;}catch{} throw new Error(msg);}
+    return r.json();
+  }
+
+  async function sendInvoiceEmail(){
+    updateInvoicePreview();
+    const to=safe($('clientEmail').value), sender=$('invoiceSender').value;
+    if(!to){setEmailStatus('invoiceEmailStatus','Add the client email address first.',true);return;}
+    if(!invoiceItems.length){setEmailStatus('invoiceEmailStatus','Add at least one invoice item first.',true);return;}
+    if(!safe($('invoiceEmailSubject').value)||!safe($('invoiceEmailBody').value)) generateInvoiceEmail();
+    setEmailStatus('invoiceEmailStatus',`Waiting for Google sign-in for ${sender}…`);
+    try{
+      const token=await requestGmailToken(sender);
+      await verifySender(token,sender);
+      setEmailStatus('invoiceEmailStatus','Creating invoice PDF…');
+      const number=safe($('invoiceNumber').value)||'invoice', pdfName=`Invoice-${number}.pdf`;
+      const pdfBlob=await documentPdfBlob('invoicePaper');
+      setEmailStatus('invoiceEmailStatus',`Sending to ${to}…`);
+      await sendGmailWithPdf({sender,to,subject:safe($('invoiceEmailSubject').value),body:safe($('invoiceEmailBody').value),pdfBlob,pdfName,token});
+      setEmailStatus('invoiceEmailStatus',`Sent successfully to ${to} from ${sender} ✓`);
+    }catch(err){setEmailStatus('invoiceEmailStatus',err.message||String(err),true);}
+  }
+
+  async function sendQuoteEmail(){
+    updateQuotationPreview();
+    const to=safe($('quoteClientEmail').value), sender=$('quoteSender').value;
+    if(!to){setEmailStatus('quoteEmailStatus','Add the client email address first.',true);return;}
+    if(!quoteItems.length){setEmailStatus('quoteEmailStatus','Add at least one quotation item first.',true);return;}
+    if(!safe($('quoteEmailSubject').value)||!safe($('quoteEmailBody').value)) generateQuoteEmail();
+    setEmailStatus('quoteEmailStatus',`Waiting for Google sign-in for ${sender}…`);
+    try{
+      const token=await requestGmailToken(sender);
+      await verifySender(token,sender);
+      setEmailStatus('quoteEmailStatus','Creating quotation PDF…');
+      const number=safe($('quoteNumber').value)||'quotation', pdfName=`Quotation-${number}.pdf`;
+      const pdfBlob=await documentPdfBlob('quotationPaper');
+      setEmailStatus('quoteEmailStatus',`Sending to ${to}…`);
+      await sendGmailWithPdf({sender,to,subject:safe($('quoteEmailSubject').value),body:safe($('quoteEmailBody').value),pdfBlob,pdfName,token});
+      setEmailStatus('quoteEmailStatus',`Sent successfully to ${to} from ${sender} ✓`);
+    }catch(err){setEmailStatus('quoteEmailStatus',err.message||String(err),true);}
+  }
+
+  function itemSummary(items){
+    if(!items.length) return ['No items added'];
+    return items.map((item,i)=>`${i+1}. ${item.description} — ${item.qty} × ${money(item.unitPrice)} = ${money(item.qty*item.unitPrice)}`);
+  }
+
+  calcIds.forEach(id=>{const saved=localStorage.getItem('form47_'+id);if(saved!==null)el[id].value=saved;el[id].addEventListener('input',calculate);el[id].addEventListener('change',calculate);});
+  invoiceIds.forEach(id=>{const saved=localStorage.getItem('invoice47_'+id);if(saved!==null)$(id).value=saved;$(id).addEventListener('input',updateInvoicePreview);$(id).addEventListener('change',()=>{if(id==='invoiceCategory'){if(!$('invoiceNumber').value)generateInvoiceNumber(true);$('invoiceSender').dataset.touched='';$('invoiceSender').value=senderForBrand($('invoiceCategory').value);generateInvoiceEmail();} if(id==='clientName')generateInvoiceEmail(); if(id==='invoiceDate' && !$('dueDate').value)$('dueDate').value=addDays($('invoiceDate').value,7); updateInvoicePreview();});});
+  quoteIds.forEach(id=>{const saved=localStorage.getItem('quote47_'+id);if(saved!==null)$(id).value=saved;$(id).addEventListener('input',updateQuotationPreview);$(id).addEventListener('change',()=>{if(id==='quoteCategory'){if(!$('quoteNumber').value)generateQuoteNumber(true);$('quoteSender').dataset.touched='';$('quoteSender').value=senderForBrand($('quoteCategory').value);generateQuoteEmail();} if(id==='quoteClientName')generateQuoteEmail(); if(id==='quoteDate' && !$('quoteValidUntil').value)$('quoteValidUntil').value=addDays($('quoteDate').value,7); updateQuotationPreview();});});
+
+  $('costTab').addEventListener('click',()=>showView('cost')); $('invoiceTab').addEventListener('click',()=>showView('invoice')); $('quotationTab').addEventListener('click',()=>showView('quotation'));
+  $('makeInvoiceBtn').addEventListener('click',()=>addInvoiceItem(true)); $('makeQuoteBtn').addEventListener('click',()=>addQuoteItem(true)); $('backToCostBtn').addEventListener('click',()=>showView('cost')); $('quoteBackToCostBtn').addEventListener('click',()=>showView('cost'));
+  $('addInvoiceItemBtn').addEventListener('click',()=>addInvoiceItem(false)); $('addQuoteItemBtn').addEventListener('click',()=>addQuoteItem(false));
+  $('invoiceUseRecommendedBtn').addEventListener('click',()=>{$('invoiceUnitPrice').value=Math.round(last.sellingPrice||0);}); $('quoteUseRecommendedBtn').addEventListener('click',()=>{$('quoteUnitPrice').value=Math.round(last.sellingPrice||0);});
+  $('generateInvoiceEmailBtn').addEventListener('click',generateInvoiceEmail); $('generateQuoteEmailBtn').addEventListener('click',generateQuoteEmail); $('sendInvoiceEmailBtn').addEventListener('click',sendInvoiceEmail); $('sendQuoteEmailBtn').addEventListener('click',sendQuoteEmail);
+  $('invoiceSender').addEventListener('change',()=>{$('invoiceSender').dataset.touched='1';generateInvoiceEmail();}); $('quoteSender').addEventListener('change',()=>{$('quoteSender').dataset.touched='1';generateQuoteEmail();});
+  const savedGoogleClientId=localStorage.getItem('47_google_client_id')||''; $('gmailClientIdInvoice').value=savedGoogleClientId; $('gmailClientIdQuote').value=savedGoogleClientId;
+  $('gmailClientIdInvoice').addEventListener('input',()=>syncGoogleClientId($('gmailClientIdInvoice').value)); $('gmailClientIdQuote').addEventListener('input',()=>syncGoogleClientId($('gmailClientIdQuote').value));
+  $('clearInvoiceItemsBtn').addEventListener('click',()=>{if(invoiceItems.length && !confirm('Clear all invoice items?'))return; invoiceItems=[];saveItems();updateInvoicePreview();});
+  $('clearQuoteItemsBtn').addEventListener('click',()=>{if(quoteItems.length && !confirm('Clear all quotation items?'))return; quoteItems=[];saveItems();updateQuotationPreview();});
+  $('rawBtn').addEventListener('click',()=>setFinish('raw')); $('paintBtn').addEventListener('click',()=>setFinish('painted'));
+  $('settingsToggle').addEventListener('click',()=>{$('settings').classList.toggle('open');$('chev').textContent=$('settings').classList.contains('open')?'−':'＋';});
+
+  $('copyBtn').addEventListener('click',async()=>{calculate();const text=[`${el.category.value} Costing — ${el.partName.value||'3D Print'}`,`Material: ${el.material.value}`,`Weight: ${num(el.weight)} g`,`Print time: ${el.hours.value||0}h ${el.minutes.value||0}m`,`Finish: ${finish==='painted'?'Hand-painted':'Raw'}`,`Production cost: ${money(last.totalCost)}`,`Recommended selling price: ${money(last.sellingPrice)}`,`Estimated profit: ${money(last.profit)}`].join('\n');try{await navigator.clipboard.writeText(text);const b=$('copyBtn'),old=b.textContent;b.textContent='Copied ✓';setTimeout(()=>b.textContent=old,1400);}catch{alert(text);}});
+
+  $('copyInvoiceBtn').addEventListener('click',async()=>{updateInvoicePreview();const total=invoiceItems.reduce((sum,item)=>sum+item.qty*item.unitPrice,0);const text=[`${$('invoiceCategory').value} Invoice ${$('invoiceNumber').value}`,`Client: ${$('clientName').value||'—'}`,...itemSummary(invoiceItems),`Total: ${money(total)}`,`Due: ${prettyDate($('dueDate').value)}`].join('\n');try{await navigator.clipboard.writeText(text);const b=$('copyInvoiceBtn'),old=b.textContent;b.textContent='Copied ✓';setTimeout(()=>b.textContent=old,1400);}catch{alert(text);}});
+  $('printInvoiceBtn').addEventListener('click',()=>{updateInvoicePreview();document.body.classList.add('print-invoice');window.print();setTimeout(()=>document.body.classList.remove('print-invoice'),600);});
+  window.addEventListener('afterprint',()=>{document.body.classList.remove('print-invoice');document.body.classList.remove('print-quotation');});
+  $('newInvoiceBtn').addEventListener('click',()=>{$('invoiceNumber').value='';generateInvoiceNumber(true);updateInvoicePreview();generateInvoiceEmail();});
+  $('clearClientBtn').addEventListener('click',()=>{['clientName','clientPhone','clientEmail','clientAddress'].forEach(id=>$(id).value='');updateInvoicePreview();generateInvoiceEmail();});
+
+  $('copyQuoteBtn').addEventListener('click',async()=>{updateQuotationPreview();const total=quoteItems.reduce((sum,item)=>sum+item.qty*item.unitPrice,0),advance=total*0.5;const text=[`${$('quoteCategory').value} Quotation ${$('quoteNumber').value}`,`Client: ${$('quoteClientName').value||'—'}`,...itemSummary(quoteItems),`Total: ${money(total)}`,`50% advance to start printing: ${money(advance)}`,`Valid until: ${prettyDate($('quoteValidUntil').value)}`].join('\n');try{await navigator.clipboard.writeText(text);const b=$('copyQuoteBtn'),old=b.textContent;b.textContent='Copied ✓';setTimeout(()=>b.textContent=old,1400);}catch{alert(text);}});
+  $('printQuoteBtn').addEventListener('click',()=>{updateQuotationPreview();document.body.classList.add('print-quotation');window.print();setTimeout(()=>document.body.classList.remove('print-quotation'),600);});
+  $('newQuoteBtn').addEventListener('click',()=>{$('quoteNumber').value='';generateQuoteNumber(true);updateQuotationPreview();generateQuoteEmail();});
+  $('clearQuoteClientBtn').addEventListener('click',()=>{['quoteClientName','quoteClientPhone','quoteClientEmail','quoteClientAddress'].forEach(id=>$(id).value='');updateQuotationPreview();generateQuoteEmail();});
+
+  if(!$('invoiceDate').value)$('invoiceDate').value=todayISO(); if(!$('dueDate').value)$('dueDate').value=addDays($('invoiceDate').value,7);
+  if(!$('quoteDate').value)$('quoteDate').value=todayISO(); if(!$('quoteValidUntil').value)$('quoteValidUntil').value=addDays($('quoteDate').value,7);
+  setFinish(finish); calculate(); if(!$('invoiceNumber').value)generateInvoiceNumber(true); if(!$('quoteNumber').value)generateQuoteNumber(true); updateInvoicePreview(); updateQuotationPreview();
+  if(!safe($('invoiceSender').value)) $('invoiceSender').value=senderForBrand($('invoiceCategory').value); if(!safe($('quoteSender').value)) $('quoteSender').value=senderForBrand($('quoteCategory').value);
+  if(!safe($('invoiceEmailSubject').value)||!safe($('invoiceEmailBody').value)) generateInvoiceEmail(); if(!safe($('quoteEmailSubject').value)||!safe($('quoteEmailBody').value)) generateQuoteEmail();
+</script>
+</body>
+</html>
